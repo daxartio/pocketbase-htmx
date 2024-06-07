@@ -1,0 +1,23 @@
+package app
+
+import (
+  "github.com/pocketbase/pocketbase/models"
+  "github.com/daxartio/pocketbase-htmx/lib"
+)
+
+templ Profile(user *models.Record) {
+  @lib.BaseLayout() {
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4">{user.Username()}</h1>
+    if user.Verified() {
+      <p class="text-green-500 font-semibold">verified</p>
+    }
+    <p class="mb-4">Id: {user.GetId()}</p>
+    <form method="post" action="/auth/logout" hx-boost="true">
+      <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        Logout
+      </button>
+    </form>
+  </div>
+  }
+}
