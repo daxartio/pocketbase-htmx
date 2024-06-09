@@ -36,7 +36,7 @@ func main() {
 		auth.RegisterRegisterRoutes(e, *authGroup)
 
 		appGroup := e.Router.Group("", auth.LoadAuthContextFromCookieMiddleware(pb), auth.AuthGuardMiddleware())
-		appGroup.GET("", app.ProfileGet)
+		appGroup.GET("", app.Profile)
 
 		return nil
 	})

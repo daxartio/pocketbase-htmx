@@ -8,7 +8,7 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 )
 
-func ProfileGet(c echo.Context) error {
+func Profile(c echo.Context) error {
 	var record *models.Record = c.Get(apis.ContextAuthRecordKey).(*models.Record)
 	return htmxutil.Render(c, 200, view.Profile(record))
 }
