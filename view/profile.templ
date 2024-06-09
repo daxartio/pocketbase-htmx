@@ -1,12 +1,11 @@
-package app
+package view
 
 import (
   "github.com/pocketbase/pocketbase/models"
-  "github.com/daxartio/pocketbase-htmx/lib"
 )
 
 templ Profile(user *models.Record) {
-  @lib.BaseLayout() {
+  @BaseLayout() {
     <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
     <h1 class="text-2xl font-bold mb-4">{user.Username()}</h1>
     if user.Verified() {

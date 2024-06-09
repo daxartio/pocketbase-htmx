@@ -4,14 +4,15 @@ import (
 	"net/http"
 
 	"github.com/a-h/templ"
-	"github.com/daxartio/pocketbase-htmx/lib"
-	"github.com/daxartio/pocketbase-htmx/middleware"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
+
+type Login func(error) templ.Component
+type LoginForm func(error) templ.Component
 
 type LoginFormValue struct {
 	username string
@@ -32,38 +33,38 @@ func getLoginFormValue(c echo.Context) LoginFormValue {
 	}
 }
 
-func RegisterLoginRoutes(e *core.ServeEvent, group echo.Group) {
-	group.GET("/login", func(c echo.Context) error {
+func (a *Auth) RegisterLoginRoutes(e *core.ServeEvent, group echo.Group) {
+	group.GET(a.cfg.LoginPath, func(c echo.Context) error {
 		if c.Get(apis.ContextAuthRecordKey) != nil {
-			return c.Redirect(302, "/app/profile")
+			return c.Redirect(302, a.cfg.RedirectPath)
 		}
 
-		return lib.Render(c, 200, Login(LoginFormValue{}, nil))
+		return Render(c, 200, a.cfg.Login(nil))
 	})
 
-	group.POST("/login", func(c echo.Context) error {
+	group.POST(a.cfg.LoginPath, func(c echo.Context) error {
 		form := getLoginFormValue(c)
 		err := form.Validate()
 
 		if err == nil {
-			err = lib.Login(e, c, form.username, form.password)
+			err = a.Login(e, c, form.username, form.password)
 		}
 
 		if err != nil {
-			component := lib.HtmxRender(
+			component := HtmxRender(
 				c,
-				func() templ.Component { return LoginForm(form, err) },
-				func() templ.Component { return Login(form, err) },
+				func() templ.Component { return a.cfg.LoginForm(err) },
+				func() templ.Component { return a.cfg.Login(err) },
 			)
-			return lib.Render(c, 200, component)
+			return Render(c, 200, component)
 		}
 
-		return lib.HtmxRedirect(c, "/app/profile")
+		return HtmxRedirect(c, a.cfg.RedirectPath)
 	})
 
-	group.POST("/logout", func(c echo.Context) error {
+	group.POST(a.cfg.LogoutPath, func(c echo.Context) error {
 		c.SetCookie(&http.Cookie{
-			Name:     middleware.AuthCookieName,
+			Name:     a.cfg.AuthCookieName,
 			Value:    "",
 			Path:     "/",
 			Secure:   true,
@@ -71,6 +72,6 @@ func RegisterLoginRoutes(e *core.ServeEvent, group echo.Group) {
 			MaxAge:   -1,
 		})
 
-		return lib.HtmxRedirect(c, "/auth/login")
+		return HtmxRedirect(c, a.cfg.RedirectLoginPath)
 	})
 }

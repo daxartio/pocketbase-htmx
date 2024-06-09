@@ -2,13 +2,15 @@ package auth
 
 import (
 	"github.com/a-h/templ"
-	"github.com/daxartio/pocketbase-htmx/lib"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
+
+type Register func(error) templ.Component
+type RegisterForm func(error) templ.Component
 
 type RegisterFormValue struct {
 	username       string
@@ -31,32 +33,32 @@ func getRegisterFormValue(c echo.Context) RegisterFormValue {
 	}
 }
 
-func RegisterRegisterRoutes(e *core.ServeEvent, group echo.Group) {
-	group.GET("/register", func(c echo.Context) error {
+func (a *Auth) RegisterRegisterRoutes(e *core.ServeEvent, group echo.Group) {
+	group.GET(a.cfg.RegisterPath, func(c echo.Context) error {
 		if c.Get(apis.ContextAuthRecordKey) != nil {
-			return c.Redirect(302, "/app/profile")
+			return c.Redirect(302, a.cfg.RedirectPath)
 		}
 
-		return lib.Render(c, 200, Register(RegisterFormValue{}, nil))
+		return Render(c, 200, a.cfg.Register(nil))
 	})
 
-	group.POST("/register", func(c echo.Context) error {
+	group.POST(a.cfg.RegisterPath, func(c echo.Context) error {
 		form := getRegisterFormValue(c)
 		err := form.Validate()
 
 		if err == nil {
-			err = lib.Register(e, c, form.username, form.password, form.passwordRepeat)
+			err = a.Register(e, c, form.username, form.password, form.passwordRepeat)
 		}
 
 		if err != nil {
-			component := lib.HtmxRender(
+			component := HtmxRender(
 				c,
-				func() templ.Component { return RegisterForm(form, err) },
-				func() templ.Component { return Register(form, err) },
+				func() templ.Component { return a.cfg.RegisterForm(err) },
+				func() templ.Component { return a.cfg.Register(err) },
 			)
-			return lib.Render(c, 200, component)
+			return Render(c, 200, component)
 		}
 
-		return lib.HtmxRedirect(c, "/app/profile")
+		return HtmxRedirect(c, a.cfg.RedirectPath)
 	})
 }

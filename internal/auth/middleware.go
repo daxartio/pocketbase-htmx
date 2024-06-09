@@ -1,4 +1,4 @@
-package middleware
+package auth
 
 import (
 	"github.com/labstack/echo/v5"
@@ -6,12 +6,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-const AuthCookieName = "Auth"
-
-func LoadAuthContextFromCookie(app core.App) echo.MiddlewareFunc {
+func (a *Auth) LoadAuthContextFromCookieMiddleware(app core.App) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			tokenCookie, err := c.Request().Cookie(AuthCookieName)
+			tokenCookie, err := c.Request().Cookie(a.cfg.AuthCookieName)
 			if err != nil {
 				return next(c)
 			}
@@ -32,14 +30,16 @@ func LoadAuthContextFromCookie(app core.App) echo.MiddlewareFunc {
 	}
 }
 
-func AuthGuard(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		record := c.Get(apis.ContextAuthRecordKey)
+func (a *Auth) AuthGuardMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			record := c.Get(apis.ContextAuthRecordKey)
 
-		if record == nil {
-			return c.Redirect(302, "/auth/login")
+			if record == nil {
+				return c.Redirect(302, a.cfg.RedirectLoginPath)
+			}
+
+			return next(c)
 		}
-
-		return next(c)
 	}
 }
